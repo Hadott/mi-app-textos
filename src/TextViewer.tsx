@@ -6,11 +6,11 @@ type Text = {
   contenido: string;
 };
 
-
 type TextViewerProps = {
-  token?: string;
+  token: string;
   onLogout: () => void;
 };
+
 
 const misTextos = [
   "Me gustó mucho este curso ya que aprendí a hacer una aplicación web tanto como backend como frontend.",
@@ -18,7 +18,7 @@ const misTextos = [
   "Quizás si hubiera tenido más tiempo podría haber aprendido más.",
 ];
 
-export default function App({ token, onLogout }: TextViewerProps) {
+export function TextViewer({ token, onLogout }: TextViewerProps) {
   const [texts, setTexts] = useState<Text[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -30,15 +30,19 @@ export default function App({ token, onLogout }: TextViewerProps) {
     setError(null);
 
     try {
-
-      // El backend ya no requiere token, solo pedimos los textos
-      const res = await fetch(config.backend.textUrl);
+      // Traemos textos del backend
+      const res = await fetch(config.backend.textUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`, // si tu backend usa token Bearer
+        },
+      });
 
       if (!res.ok) {
         const err = await res.text();
         throw new Error(err || "Error al obtener textos");
       }
 
+      // Suponemos que backend devuelve un array de textos con id y contenido
       const data: Text[] = await res.json();
 
       setTexts(data);
@@ -57,16 +61,14 @@ export default function App({ token, onLogout }: TextViewerProps) {
 
   async function handleLogout() {
     try {
-      if (token) {
-        await fetch(config.backend.logoutUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+      await fetch(config.backend.logoutUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     } catch {
-      // error logout
+      // ignoramos error logout
     }
     onLogout();
   }
@@ -83,7 +85,7 @@ export default function App({ token, onLogout }: TextViewerProps) {
 
       {error && (
         <p style={{ color: "red" }}>
-      
+          Error: {error}
         </p>
       )}
 
@@ -141,5 +143,3 @@ export default function App({ token, onLogout }: TextViewerProps) {
     </div>
   );
 }
-
-export { App as TextViewer };
